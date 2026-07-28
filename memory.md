@@ -5,12 +5,14 @@
 *   ✅ **Phase 2 COMPLETE** — Authentication & Core API.
 *   ✅ **Phase 3 COMPLETE** — The Gemini AI Engine.
 *   ✅ **Phase 4A COMPLETE** — UI Kernel (Component Library).
-*   Tailwind v4 design tokens configured from DESIGN.md (Kinetic Precision).
-*   Four kernel primitives built: Button, Input, Card, StatusChip.
-*   Centralized kernel.css with Swiss International Style tokens and animations.
+*   ✅ **Phase 4B COMPLETE** — Web UI & Execution Tracking.
+*   Full Next.js dashboard built by exclusively composing `@pulse/ui` primitives.
+*   Global persistent layout with sticky header and left sidebar.
+*   Four core routes: Dashboard (`/`), Timeline (`/timeline`), Analytics (`/analytics`), Settings (`/settings`).
+*   Configured `@/*` and `@pulse/web/*` path aliases.
 
 **Next Immediate Action:**
-*   Execute Phase 4B: Web UI & Execution Tracking — Build the Next.js dashboard composing from `/packages/ui`.
+*   Execute Phase 5: Native Android Expansion (Future) — Consume API endpoints in a native Kotlin environment with local Room database caching.
 
 **Key Decisions Locked:**
 *   Package manager: npm (with workspaces).
@@ -63,3 +65,13 @@
 *   Built four kernel primitives: `Button` (4 variants), `Input` (2 variants + error state), `Card` (with header rule + elevated), `StatusChip` (5 status colors + 6px dot indicator).
 *   Created `cn` utility (clsx + tailwind-merge) as the only sanctioned class composition method.
 *   *Developer Note:* All components enforce 0px border-radius, use color inversion for hover/press (no opacity shifts), and JetBrains Mono for all labels/metadata per the Swiss International Style spec.
+
+**[2026-07-28] [Antigravity / Gemini 3.1 Pro] Phase 4B: Web UI & Execution Tracking (Completed)**
+*   Composed the full-screen SaaS web application using Next.js App Router.
+*   Built persistent layout shell (`layout.tsx`, `Header.tsx`, `Sidebar.tsx`) with zero dead whitespace and pure black backgrounds.
+*   Built the Main Dashboard (`/`) featuring the Active Task timer, Upcoming Pipeline, and Gemini Core AI Chat Panel.
+*   Built the Timeline Manager (`/timeline`) with a vertical time-blocking grid.
+*   Built the Analytics View (`/analytics`) with KPI cards and a CSS-based planned vs actual time allocation bar chart.
+*   Built the Settings & Profile (`/settings`) page for AI strategy configuration and integrations.
+*   Created a strongly-typed API client wrapper (`lib/api.ts`) for JWT management and backend communication.
+*   *Developer Note:* Replaced `.js` extensions in `@pulse/ui` exports to fix Next.js Turbopack source resolution issues. Added `@/*` path alias to the web app's `tsconfig.json`.

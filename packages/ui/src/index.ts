@@ -9,10 +9,10 @@
  */
 
 // ─── Utilities ────────────────────────────────────────────
-export { cn } from "./utils/cn.js";
+export { cn } from "./utils/cn";
 
 // ─── Components ───────────────────────────────────────────
-export { Button, type ButtonProps } from "./components/Button.js";
-export { Input, type InputProps } from "./components/Input.js";
-export { Card, type CardProps } from "./components/Card.js";
-export { StatusChip, type StatusChipProps } from "./components/StatusChip.js";
+export { Button, type ButtonProps } from "./components/Button";
+export { Input, type InputProps } from "./components/Input";
+export { Card, type CardProps } from "./components/Card";
+export { StatusChip, type StatusChipProps } from "./components/StatusChip";

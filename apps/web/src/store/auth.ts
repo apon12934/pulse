@@ -6,6 +6,8 @@ interface User {
   name: string;
   email: string;
   tier: string;
+  geminiApiKey?: string | null;
+  rescheduleStrategy?: string;
 }
 
 interface AuthState {

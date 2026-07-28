@@ -92,3 +92,9 @@
 *   Wired `Timeline` view to fetch scheduled blocks from the API and connected the "GENERATE AI ROUTINE" button to `/api/schedule/generate`.
 *   Wired `AiChatPanel.tsx` and the full `/chat` route to send directives to `/api/schedule/chat`, maintaining local message state.
 *   Wired Config page (`/config`) to use `localStorage` for Gemini API Key and Reschedule strategy persistence pending future DB migrations.
+
+**[2026-07-28] [Antigravity / Gemini 3.1 Pro] Database Migration & User Config Refactor**
+*   Updated `User` model in `schema.prisma` to include `geminiApiKey` and `rescheduleStrategy`. Generated new Prisma Client.
+*   Added `PATCH /api/user/profile` endpoint in the Express backend, backed by Zod validation, to securely update user preferences.
+*   Refactored the `/api/auth/me` and `/api/auth/login` endpoints to return these new fields during hydration.
+*   Updated the `useAuthStore` User interface and refactored `/config/page.tsx` to save and read settings via the DB rather than `localStorage`.

@@ -4,24 +4,36 @@ import { useState, useEffect } from 'react';
 import { Card, Input, Button, StatusChip } from '@pulse/ui';
 import { Save, Clipboard, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
+import { apiPatch } from '@/lib/api';
 
 export default function ConfigPage() {
-  const { user } = useAuthStore();
-  const [apiKey, setApiKey] = useState('');
-  const [strategy, setStrategy] = useState('Maximum Flow');
+  const { user, hydrate } = useAuthStore();
+  const [apiKey, setApiKey] = useState(user?.geminiApiKey || '');
+  const [strategy, setStrategy] = useState(user?.rescheduleStrategy || 'BALANCED');
+  const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
-    // Mock hydrate from localStorage
-    const savedKey = localStorage.getItem('pulse_gemini_api_key') || '';
-    const savedStrategy = localStorage.getItem('pulse_reschedule_strategy') || 'Maximum Flow';
-    setApiKey(savedKey);
-    setStrategy(savedStrategy);
-  }, []);
+    if (user) {
+      setApiKey(user.geminiApiKey || '');
+      setStrategy(user.rescheduleStrategy || 'BALANCED');
+    }
+  }, [user]);
 
-  const handleSave = () => {
-    localStorage.setItem('pulse_gemini_api_key', apiKey);
-    localStorage.setItem('pulse_reschedule_strategy', strategy);
-    alert('Configurations saved locally.');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await apiPatch<{ user: any }>('/api/user/profile', {
+        geminiApiKey: apiKey || null,
+        rescheduleStrategy: strategy
+      });
+      hydrate(res.user);
+      alert('Configurations saved securely to system database.');
+    } catch (err) {
+      console.error('Failed to save configs:', err);
+      alert('Failed to save configurations.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -128,9 +140,9 @@ export default function ConfigPage() {
       </div>
 
       <div className="mt-8 flex justify-center">
-        <Button variant="primary" size="lg" className="px-12 py-4" onClick={handleSave}>
+        <Button variant="primary" size="lg" className="px-12 py-4" onClick={handleSave} disabled={isSaving}>
           <Save className="w-5 h-5 mr-2" />
-          SAVE CONFIGURATIONS
+          {isSaving ? 'SAVING...' : 'SAVE CONFIGURATIONS'}
         </Button>
       </div>
     </div>

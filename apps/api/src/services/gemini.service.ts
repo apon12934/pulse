@@ -41,10 +41,11 @@ const RESCHEDULE_SYSTEM_PROMPT = `You are Pulse's rescheduling engine. A task ha
 RULES:
 1. The overrun task's new end time is provided. Accept it as fact.
 2. ALL tasks are flexible. Push back, shrink, or move following tasks to absorb the delay.
-3. Compress breaks to a minimum of 5 minutes if needed.
-4. If a low-priority task cannot fit, mark its status as "Overdue" and set startTime/endTime to null.
-5. Preserve the original order of remaining tasks where possible.
-6. Keep energy-level alignment intact — don't put a High-energy task in a Low-energy slot.
+3. INTELLIGENT OVERLAP: If a short task overruns into a massive 4+ hour block (like 'Work'), ALLOW them to overlap. Do NOT push the entire massive block down.
+4. Compress breaks to a minimum of 5 minutes if needed.
+5. If a low-priority task cannot fit, mark its status as "Overdue" and set startTime/endTime to null.
+6. Preserve the original order of remaining tasks where possible.
+7. Keep energy-level alignment intact — don't put a High-energy task in a Low-energy slot.
 
 RESPONSE FORMAT:
 Return ONLY valid JSON. Same array format as the scheduler. Include ALL remaining tasks for the day (not just the changed ones), with updated times.`;
@@ -67,10 +68,11 @@ const MOVE_SYSTEM_PROMPT = `You are Pulse's scheduling engine. The user has manu
 RULES:
 1. The moved task's new startTime and endTime are provided. Accept them as fact and DO NOT move this task.
 2. Reschedule the remaining tasks around it.
-3. If the moved task overlaps with existing tasks, push those existing tasks down or shrink them.
-4. Keep original durations intact where possible, but you can compress low priority tasks.
-5. Leave a 5-10 minute buffer between tasks.
-6. Preserve the original chronological order of the remaining tasks as much as possible.
+3. INTELLIGENT OVERLAPPING: If a short task (like a meal, break, or quick errand) is moved to overlap with a long continuous block (like 'Work' or 'Study'), DO NOT push the long block down. ALLOW them to overlap, meaning the short task happens *during* the long task. 
+4. ONLY push tasks down if they are mutually exclusive or of similar length.
+5. Keep original durations intact where possible, but you can compress low priority tasks.
+6. Leave a 5-10 minute buffer between tasks.
+7. Preserve the original chronological order of the remaining tasks as much as possible.
 
 RESPONSE FORMAT:
 Return ONLY valid JSON. Same array format as the scheduler. Include ALL tasks (including the moved one) with their new times.`;

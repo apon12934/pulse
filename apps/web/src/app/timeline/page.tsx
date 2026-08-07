@@ -1,44 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, cn } from '@pulse/ui';
+import { Button, cn, Modal, Input, Select } from '@pulse/ui';
 import { Lock, ChevronLeft, ChevronRight, GripVertical, Sparkles, Trash2 } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { useTaskStore } from '@/store/tasks';
+import { TimelineBlock } from '@/components/timeline/TimelineBlock';
 
 /* ─── Time Grid Config ─────────────────────────── */
 // We'll compute these dynamically inside the component now
 const HOUR_HEIGHT = 80; // px per hour
 
-function timeToOffset(dateString: string, hourStart: number): number {
-  const d = new Date(dateString);
-  const h = d.getHours();
-  const m = d.getMinutes();
-  return (h - hourStart + m / 60) * HOUR_HEIGHT;
-}
-
-function timeToHeight(startStr: string, endStr: string): number {
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-  return ((end.getTime() - start.getTime()) / 3600000) * HOUR_HEIGHT;
-}
-
+// Removed inline time functions as they are now in TimelineBlock
 function formatHour(h: number): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return `${display.toString().padStart(2, '0')}:00 ${ampm}`;
-}
-
-function formatTimeRange(startStr: string, endStr: string): string {
-  const fmt = (d: Date) => {
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
-  };
-  return `${fmt(new Date(startStr))} — ${fmt(new Date(endStr))}`;
 }
 
 /* ─── Page Component ───────────────────────────── */
@@ -70,6 +48,45 @@ export default function TimelinePage() {
       setLocalError(err.message || 'Generation failed');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    type: 'Anchor',
+    energyLevel: 'Medium',
+    priority: 1,
+    startHour: '09:00',
+    durationMinutes: 60,
+  });
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !newTask.title) return;
+    
+    // Construct startTime and endTime based on currentDate + startHour
+    const start = new Date(currentDate);
+    const [h, m] = newTask.startHour.split(':').map(Number);
+    start.setHours(h ?? 9, m ?? 0, 0, 0);
+    
+    const end = new Date(start.getTime() + newTask.durationMinutes * 60000);
+
+    try {
+      await apiPost('/api/tasks', {
+        title: newTask.title,
+        type: newTask.type,
+        energyLevel: newTask.energyLevel,
+        priority: Number(newTask.priority),
+        startTime: start.toISOString(),
+        endTime: end.toISOString()
+      });
+      setIsCreateModalOpen(false);
+      setNewTask({ title: '', type: 'Anchor', energyLevel: 'Medium', priority: 1, startHour: '09:00', durationMinutes: 60 });
+      await fetchTasks(currentDate);
+    } catch (err: any) {
+      console.error('Failed to create task:', err);
+      setLocalError(err.message || 'Failed to create task');
     }
   };
 
@@ -133,6 +150,9 @@ export default function TimelinePage() {
             </button>
           </div>
 
+          <Button variant="ghost" size="md" onClick={() => setIsCreateModalOpen(true)}>
+            + NEW TASK
+          </Button>
           <Button variant="primary" size="md" onClick={handleGenerate} disabled={isGenerating}>
             <Sparkles className="w-4 h-4 mr-2" />
             {isGenerating ? 'GENERATING...' : 'GENERATE AI ROUTINE'}
@@ -142,6 +162,69 @@ export default function TimelinePage() {
 
       {/* ── 1px yellow divider ────────────────── */}
       <div className="h-px w-full bg-[#FFFF00] shrink-0" />
+
+      {/* ── Create Modal ──────────────────────── */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="CREATE NEW TASK">
+        <form onSubmit={handleCreateTask} className="flex flex-col gap-5">
+          <Input 
+            label="Task Title" 
+            placeholder="e.g. Deep Work Session" 
+            value={newTask.title}
+            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+            required
+            autoFocus
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Select 
+              label="Type" 
+              value={newTask.type} 
+              onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+            >
+              <option value="Anchor">Anchor (Fixed)</option>
+              <option value="Fluid">Fluid (AI Flexible)</option>
+            </Select>
+            <Select 
+              label="Energy Level" 
+              value={newTask.energyLevel} 
+              onChange={(e) => setNewTask({ ...newTask, energyLevel: e.target.value })}
+            >
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Start Time" 
+              type="time"
+              value={newTask.startHour}
+              onChange={(e) => setNewTask({ ...newTask, startHour: e.target.value })}
+              required
+            />
+            <Input 
+              label="Duration (mins)" 
+              type="number"
+              min="5"
+              step="5"
+              value={newTask.durationMinutes}
+              onChange={(e) => setNewTask({ ...newTask, durationMinutes: parseInt(e.target.value) })}
+              required
+            />
+          </div>
+          <Input 
+            label="Priority (1-10)" 
+            type="number"
+            min="1"
+            max="10"
+            value={newTask.priority}
+            onChange={(e) => setNewTask({ ...newTask, priority: parseInt(e.target.value) })}
+            required
+          />
+          <Button variant="primary" type="submit" className="w-full mt-2">
+            LOCK INTO TIMELINE
+          </Button>
+        </form>
+      </Modal>
 
       {/* ── Grid ──────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
@@ -172,79 +255,17 @@ export default function TimelinePage() {
               />
             ))}
 
-            {tasks.map((block) => {
-              const top = timeToOffset(block.startTime, hourStart);
-              const height = timeToHeight(block.startTime, block.endTime);
-              const isFluid = block.type === 'Fluid';
-
-              // Prevent rendering blocks outside visible hours
-              if (top < 0 || top > totalHeight) return null;
-
-              return (
-                <div
-                  key={block.id}
-                  className="absolute left-3 right-3"
-                  style={{ top, height: Math.max(height, 40) }} // min height
-                >
-                  <div
-                    className={cn(
-                      'h-full w-full px-4 py-3 flex flex-col justify-between transition-colors duration-150',
-                      isFluid
-                        ? 'border border-dashed border-[#FFFF00]/60 bg-[#FFFF00]/[0.03] hover:bg-[#FFFF00]/[0.06]'
-                        : 'border border-[#262626] bg-[#121212] hover:bg-[#1A1A1A]',
-                    )}
-                  >
-                    {/* Top row */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex flex-col gap-1">
-                        <span className={cn(
-                          'font-sans text-[15px] font-semibold leading-tight',
-                          isFluid ? 'text-[#FFFF00]' : 'text-[#999]',
-                        )}>
-                          {block.title}
-                        </span>
-                        <span className="font-mono text-[10px] text-[#555] uppercase tracking-[0.05em]">
-                          {formatTimeRange(block.startTime, block.endTime)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={cn(
-                          'font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 border',
-                          isFluid
-                            ? 'text-[#FFFF00] border-[#FFFF00]/40'
-                            : 'text-[#666] border-[#333]',
-                        )}>
-                          {block.type === 'Fluid' ? 'FLUID' : 'ANCHOR'}
-                        </span>
-                        {isFluid ? (
-                          <GripVertical className="w-3.5 h-3.5 text-[#555]" />
-                        ) : (
-                          <Lock className="w-3.5 h-3.5 text-[#555]" />
-                        )}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); deleteTask(block.id); }}
-                          className="ml-2 text-[#555] hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Bottom accent bar for Fluid blocks */}
-                    {isFluid && height > 60 && (
-                      <div className="flex items-center gap-2 mt-auto">
-                        <div className="h-px flex-1 bg-[#FFFF00]/20" />
-                        <span className="font-mono text-[9px] text-[#FFFF00]/50 uppercase tracking-widest">
-                          AI-FLEXIBLE
-                        </span>
-                        <div className="h-px flex-1 bg-[#FFFF00]/20" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {tasks.map((block) => (
+              <TimelineBlock
+                key={block.id}
+                block={block}
+                hourStart={hourStart}
+                hourHeight={HOUR_HEIGHT}
+                totalHeight={totalHeight}
+                onDelete={deleteTask}
+                onRefresh={() => fetchTasks(currentDate)}
+              />
+            ))}
 
             {tasks.length === 0 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">

@@ -33,16 +33,24 @@ export default function ChatPage() {
 
     try {
       const today = new Date().toISOString().split('T')[0];
+      
+      const apiMessages = [...messages, userMessage]
+        .filter(m => m.id !== 'init')
+        .map(m => ({
+          role: m.role === 'ai' ? 'model' : 'user',
+          content: m.text
+        }));
+
       const response = await apiPost<any>('/api/schedule/chat', {
-        message: userMessage.text,
+        messages: apiMessages,
         date: today
       });
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         role: 'ai',
-        title: `Parsed ${response.tasksCreated} task(s).`,
-        text: `Energy level interpreted as: ${response.parsedEnergyLevel}`,
+        title: response.status === 'approved' ? `Successfully scheduled ${response.tasksCreated} task(s).` : undefined,
+        text: response.reply || "I'm sorry, I encountered an error formatting my response.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
       };
 
